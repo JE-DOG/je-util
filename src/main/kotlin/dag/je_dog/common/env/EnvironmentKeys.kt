@@ -1,0 +1,11 @@
+package dag.je_dog.common.env
+
+object EnvironmentKeys {
+
+    const val NOTION_API_TOKEN = "NOTION_API_TOKEN"
+    const val NOTION_TASKS_CALENDAR_LINK = "NOTION_TASKS_CALENDAR_LINK"
+
+    const val MATRIX_DAILY_REPORT_ROOM_ID = "MATRIX_DAILY_REPORT_ROOM_ID"
+    const val MATRIX_ACCESS_TOKEN = "MATRIX_ACCESS_TOKEN"
+    const val MATRIX_HOME_SERVER_URL = "MATRIX_HOME_SERVER_URL"
+}

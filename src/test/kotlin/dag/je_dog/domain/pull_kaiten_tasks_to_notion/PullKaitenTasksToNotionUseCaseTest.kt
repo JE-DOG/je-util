@@ -39,6 +39,37 @@ class PullKaitenTasksToNotionUseCaseTest {
     }
 
     @Test
+    fun `skips task when same title already exists`() = runBlocking {
+        val kaitenGateway = FakeKaitenTasksGateway(
+            tasksById = mapOf(
+                101L to KaitenTask(id = 101L, title = "Task A", link = "https://kaiten/task/101"),
+            ),
+        )
+        val notionGateway = FakeNotionTasksGateway(
+            existingTasks = mutableListOf(
+                NotionTask(id = "999", title = "Task A"),
+            ),
+        )
+
+        val result = PullKaitenTasksToNotionUseCase(
+            kaitenTasksGateway = kaitenGateway,
+            notionTasksGateway = notionGateway,
+        ).execute(
+            request = PullKaitenTasksToNotionRequest(
+                notionDatabaseInput = "db",
+                notionToken = "notion-token",
+                kaitenApiUrl = "https://kaiten/api/latest",
+                kaitenApiToken = "kaiten-token",
+                source = PullKaitenTasksSource.ByIds(listOf(101L)),
+            ),
+        )
+
+        assertEquals(1, result.outcomes.size)
+        assertIs<PullKaitenTaskOutcome.AlreadyExists>(result.outcomes.first())
+        assertEquals(emptyList(), notionGateway.addedTasks)
+    }
+
+    @Test
     fun `adds task when same id exists but title differs`() = runBlocking {
         val kaitenGateway = FakeKaitenTasksGateway(
             tasksById = mapOf(

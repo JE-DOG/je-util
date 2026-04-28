@@ -28,7 +28,7 @@ class KaitenTasksGatewayImpl(
         val card = requestJsonObject(
             apiUrl = apiUrl,
             apiToken = apiToken,
-            pathAndQuery = "/cards/$taskId",
+            pathAndQuery = "/api/latest/cards/$taskId",
         )
 
         return parseTask(
@@ -55,7 +55,7 @@ class KaitenTasksGatewayImpl(
                 apiUrl = apiUrl,
                 apiToken = apiToken,
                 pathAndQuery =
-                    "/boards/$boardId/cards?limit=$PAGE_LIMIT&skip=$skip&sort_by=created&sort_direction=desc&condition=1",
+                    "/api/latest/boards/$boardId/cards?limit=$PAGE_LIMIT&skip=$skip&sort_by=created&sort_direction=desc&condition=1",
             )
             if (cardArray.isEmpty()) {
                 break
@@ -217,7 +217,7 @@ class KaitenTasksGatewayImpl(
         return requestJsonObject(
             apiUrl = apiUrl,
             apiToken = apiToken,
-            pathAndQuery = "/boards/$boardId",
+            pathAndQuery = "/api/latest/boards/$boardId",
         ).getLong("space_id")
     }
 
@@ -228,13 +228,8 @@ class KaitenTasksGatewayImpl(
     ): String {
         val baseUiUrl = apiUrl.trim()
             .trimEnd('/')
-            .removeSuffix("/api/latest")
 
-        return if (spaceId == null) {
-            "$baseUiUrl/card/$taskId"
-        } else {
-            "$baseUiUrl/space/$spaceId/card/$taskId"
-        }
+        return "$baseUiUrl/$taskId"
     }
 
     private fun normalizeApiUrl(apiUrl: String): String {

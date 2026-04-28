@@ -29,23 +29,11 @@ class NotionTasksGatewayImpl(
                 notionClient = notionClient,
                 databaseId = schema.databaseId,
             ).mapNotNull { page ->
-                val id = extractPropertyValue(
+                extractExistingTask(
                     page = page,
-                    propertySpec = schema.idProperty,
-                )?.trim().orEmpty()
-                val title = extractPropertyValue(
-                    page = page,
-                    propertySpec = schema.titleProperty,
-                )?.trim().orEmpty()
-
-                if (id.isBlank() || title.isBlank()) {
-                    null
-                } else {
-                    NotionTask(
-                        id = id,
-                        title = title,
-                    )
-                }
+                    idPropertyNames = setOf(schema.idProperty.id, schema.idProperty.name),
+                    titlePropertyNames = setOf(schema.titleProperty.id, schema.titleProperty.name),
+                )
             }
         }
     }
@@ -170,12 +158,12 @@ class NotionTasksGatewayImpl(
 
     private fun extractPropertyValue(
         page: Page,
-        propertySpec: PropertySpec,
+        propertyNames: Set<String>,
     ): String? {
         val propertyValue = page.propertyValues.firstOrNull { propertyValue ->
             isMatchingProperty(
                 propertyValue = propertyValue,
-                propertySpec = propertySpec,
+                propertyNames = propertyNames,
             )
         } ?: return null
 
@@ -195,10 +183,12 @@ class NotionTasksGatewayImpl(
 
     private fun isMatchingProperty(
         propertyValue: PropertyValue<*>,
-        propertySpec: PropertySpec,
+        propertyNames: Set<String>,
     ): Boolean {
-        return propertyValue.id.equals(propertySpec.id, ignoreCase = true) ||
-                propertyValue.name.equals(propertySpec.name, ignoreCase = true)
+        return propertyNames.any { propertyName ->
+            propertyValue.id.equals(propertyName, ignoreCase = true) ||
+                    propertyValue.name.equals(propertyName, ignoreCase = true)
+        }
     }
 
     private fun applyIdProperty(
@@ -290,4 +280,67 @@ class NotionTasksGatewayImpl(
             }.lowercase()
         }
     }
+}
+
+internal fun extractExistingTask(
+    page: Page,
+    idPropertyNames: Set<String>,
+    titlePropertyNames: Set<String>,
+): NotionTask? {
+    val id = extractPropertyValue(
+        page = page,
+        propertyNames = idPropertyNames,
+    )?.trim().orEmpty()
+    val title = extractPropertyValue(
+        page = page,
+        propertyNames = titlePropertyNames,
+    )?.trim().orEmpty()
+
+    if (title.isBlank()) {
+        return null
+    }
+
+    return NotionTask(
+        id = id,
+        title = title,
+    )
+}
+
+private fun extractPropertyValue(
+    page: Page,
+    propertyNames: Set<String>,
+): String? {
+    val propertyValue = page.propertyValues.firstOrNull { propertyValue ->
+        isMatchingProperty(
+            propertyValue = propertyValue,
+            propertyNames = propertyNames,
+        )
+    } ?: return null
+
+    return when (propertyValue) {
+        is TitlePropertyValue -> propertyValue.value.plainText
+        is RichTextPropertyValue -> propertyValue.value.plainText
+        is NumberPropertyValue -> propertyValue.value?.toStableString()
+        is UrlPropertyValue -> propertyValue.value
+        is SelectPropertyValue -> propertyValue.value?.name
+        is MultiSelectPropertyValue -> propertyValue.value
+            .joinToString(separator = ",") { option -> option.name }
+            .ifBlank { null }
+
+        else -> null
+    }
+}
+
+private fun isMatchingProperty(
+    propertyValue: PropertyValue<*>,
+    propertyNames: Set<String>,
+): Boolean {
+    return propertyNames.any { propertyName ->
+        propertyValue.id.equals(propertyName, ignoreCase = true) ||
+                propertyValue.name.equals(propertyName, ignoreCase = true)
+    }
+}
+
+private fun Number.toStableString(): String {
+    return toString().removeSuffix(".0")
 }

@@ -50,17 +50,11 @@ class PullKaitenTasksToNotionUseCase(
             databaseInput = request.notionDatabaseInput,
             notionToken = request.notionToken,
         ).map { task ->
-            duplicateKey(
-                id = task.id,
-                title = task.title,
-            )
+            duplicateKey(title = task.title)
         }.toMutableSet()
 
         tasks.forEach { task ->
-            val duplicateKey = duplicateKey(
-                id = task.id.toString(),
-                title = task.title,
-            )
+            val duplicateKey = duplicateKey(title = task.title)
 
             if (existingKeys.contains(duplicateKey)) {
                 outcomes += PullKaitenTaskOutcome.AlreadyExists(task)
@@ -88,13 +82,8 @@ class PullKaitenTasksToNotionUseCase(
     }
 
     private fun duplicateKey(
-        id: String,
         title: String,
     ): String {
-        return id.trim() + KEY_SEPARATOR + title.trim()
-    }
-
-    private companion object {
-        private const val KEY_SEPARATOR = "\u0000"
+        return title.trim()
     }
 }
